@@ -134,7 +134,7 @@ public class GameController : NSObject {
                 }
             }
         }
-        element.action(targets)
+        element.action(self.currentPlayer.character!, targets)
         if element.resolution != nil {
             resolutionTargets.append(targets)
             resolutions.append(element.resolution!)
@@ -160,10 +160,8 @@ public class GameController : NSObject {
                 if element.start == .NextTurn {
                     // fixme: show UI to show that this will happen next turn
                     self.actionsForNextTurn.append(element)
-                    NSTimer.scheduledTimerWithTimeInterval(0.01, target: self, selector: Selector("continueGame"), userInfo: nil, repeats: false)
                 } else if element.start == .TurnAfterNext {
                     self.actionsForTurnAfterNext.append(element)
-                    NSTimer.scheduledTimerWithTimeInterval(0.01, target: self, selector: Selector("continueGame"), userInfo: nil, repeats: false)
                 } else {
                     self.performActionElement(element, resolutions: &resolutions, resolutionTargets: &resolutionTargets)
                 }
@@ -181,10 +179,8 @@ public class GameController : NSObject {
                 if element.start == .NextTurn {
                     // fixme: show UI to show that this will happen next turn
                     self.actionsForNextTurn.append(element)
-                    NSTimer.scheduledTimerWithTimeInterval(0.01, target: self, selector: Selector("continueGame"), userInfo: nil, repeats: false)
                 } else if element.start == .TurnAfterNext {
                     self.actionsForTurnAfterNext.append(element)
-                    NSTimer.scheduledTimerWithTimeInterval(0.01, target: self, selector: Selector("continueGame"), userInfo: nil, repeats: false)
                 } else {
                     self.performActionElement(element, resolutions: &resolutions, resolutionTargets: &resolutionTargets)
                 }
@@ -293,23 +289,24 @@ public class Action {
     public var elements:Array<ActionElement>
     var type:ActionType
     var actionChoice:ActionChoice
+    public var character:Character?
     
     init(name:String, type:ActionType, elements:Array<ActionElement>, actionChoice:ActionChoice) {
         self.name = name
         self.type = type
         self.elements = elements
         self.actionChoice = actionChoice
+        for element in self.elements {
+            element.parentAction = self
+        }
     }
     
-    init(name:String, type:ActionType, elements:Array<ActionElement>) {
-        self.name = name
-        self.type = type
-        self.elements = elements
-        self.actionChoice = .And
+    convenience init(name:String, type:ActionType, elements:Array<ActionElement>) {
+        self.init(name:name, type:type, elements:elements, actionChoice:.And)
     }
 }
 
-public func damageCharacter(character:Character, var damage:Int) {
+public func damageCharacter(character:Character, attacker:Character, var damage:Int, skipReaction:Bool) {
     if character.targetable == false {
         assert(false, "Should not be able to target an untargetable Character")
         return
@@ -321,6 +318,16 @@ public func damageCharacter(character:Character, var damage:Int) {
     } else {
         character.life -= damage
     }
+    
+    for reaction in character.reactions {
+        if reaction.healthTrigger == character.life {
+            damageCharacter(character, attacker, reaction.damage)
+        }
+    }
+}
+
+public func damageCharacter(character:Character, attacker:Character, var damage:Int) {
+    damageCharacter(character, attacker, damage, false)
 }
 
 public func applyPoison(character:Character) {
@@ -358,6 +365,13 @@ public func applyConfusion(character:Character) {
     character.confusion = true
 }
 
+public func applyHealing(character:Character, healing:Int) {
+    character.life += healing
+    if character.life > character.maxLife {
+        character.life = character.maxLife
+    }
+}
+
 public enum NumberOfTargets {
     case Some(Int)
     case Arbitrary
@@ -370,51 +384,49 @@ public enum Turn {
 }
 
 public class ActionElement {
-    var action:Array<Character> -> ()
+    var action:(Character, Array<Character>) -> ()
     var numberOfTargets:NumberOfTargets
     var resolution:(Array<Character> -> ())?
     public var chooser:(Array<Character> -> Array<Character>)?
     var targetFilter:(Character -> Bool)?
     var start:Turn
+    public var parentAction:Action?
     
     init(var damage:Int) {
-        self.action = {(targets:Array<Character>) -> () in
+        self.action = {originator, targets -> () in
             if countElements(targets) != 1 {
                 return
             }
             
-            damageCharacter(targets[0], damage)
+            damageCharacter(targets[0], originator, damage)
         }
         self.numberOfTargets = .Some(1)
         self.start = .ThisTurn
     }
     
     init(healing:Int) {
-        self.action = {(targets:Array<Character>) -> () in
+        self.action = { originator, targets -> () in
             if countElements(targets) != 1 {
                 return
             }
-            targets[0].life += healing
-            if (targets[0].life > targets[0].maxLife) {
-                targets[0].life = targets[0].maxLife
-            }
+            applyHealing(targets[0], healing)
         }
         self.numberOfTargets = .Some(1)
         self.start = .ThisTurn
     }
     init(damageWithPoison:Int) {
-        self.action = {(targets:Array<Character>) -> () in
+        self.action = { originator, targets -> () in
             if countElements(targets) != 1 {
                 return
             }
-            damageCharacter(targets[0], damageWithPoison)
+            damageCharacter(targets[0], originator, damageWithPoison)
             applyPoison(targets[0])
         }
         self.numberOfTargets = .Some(1)
         self.start = .ThisTurn
     }
     
-    init(action:Array<Character> -> (), resolution:(Array<Character> -> ())?, chooser:(Array<Character> -> Array<Character>)?, numberOfTargets:NumberOfTargets, start:Turn) {
+    init(action:((Character, Array<Character>) -> ()), resolution:(Array<Character> -> ())?, chooser:(Array<Character> -> Array<Character>)?, numberOfTargets:NumberOfTargets, start:Turn) {
         self.action = action
         self.resolution = resolution
         self.chooser = chooser
@@ -468,7 +480,7 @@ public class Character {
     var reactions:Array<Reaction>
     public var damageMitigation:(Int -> Int)?
     var gender:Gender
-    var targetable:Bool
+    public var targetable:Bool
     var poison:Bool
     public var fear:Bool
     public var stun:Bool
@@ -503,6 +515,10 @@ public class Character {
         self.restoration = false
         self.canTakeMeleeAction = true
         self.avoidsNegativeStatusEffects = false
+        
+        for action in self.actions {
+            action.character = self
+        }
     }
 }
 

@@ -13,20 +13,21 @@ public func character45() -> Character {
     var actionElement2 = ActionElement(damage: 30)
     var action1 = Action(name: "Redeeming Quality", type: .Healing, elements: [actionElement1, actionElement2])
     
-    var actionElement3 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement3 = ActionElement(action: { (originator:Character, targets:Array<Character>) -> () in
         for target in targets {
             applyBlind(target)
         }
     }, resolution: nil, chooser: nil, numberOfTargets:.Some(3), start:.ThisTurn)
     var action2 = Action(name: "Glaring Beauty", type: .Status, elements: [actionElement3])
     
-    var actionElement4 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement4 = ActionElement(action: { originator, targets -> () in
         if countElements(targets) != 1 {
             return
         }
         targets[0].targetable = false
     }, resolution: { (targets:Array<Character>) -> () in
-        targets[0].targetable = true
+        let target = targets[0] as Character
+        target.targetable = true
     }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
         for character in allCharacters {
             if character.name == "Wandering Siryn" {
@@ -37,7 +38,7 @@ public func character45() -> Character {
         return []
     }, numberOfTargets:.Some(1), start:.NextTurn)
     
-    var actionElement5 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement5 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             if target.gender == Gender.Female {
                 target.damageMitigation = { (var damage:Int) -> Int in
@@ -67,11 +68,11 @@ public func character45() -> Character {
     var action3 = Action(name: "Transfix", type:.Stance, elements: [actionElement4, actionElement5])
     println("finished creating action: \(action3.elements[0].chooser)")
     
-    var actionElement6 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement6 = ActionElement(action: { originator, targets -> () in
         if countElements(targets) != 1 {
             return
         }
-        damageCharacter(targets[0], 60)
+        damageCharacter(targets[0], originator, 60)
         gameController!.roll("Fear", {
             if gameController!.die1.toRaw() >= 5 {
                 applyFear(targets[0])
@@ -81,7 +82,7 @@ public func character45() -> Character {
     }, resolution:nil, chooser:nil, numberOfTargets:.Some(1), start: .ThisTurn)
     var action4 = Action(name: "Backstab", type:.Melee, elements: [actionElement6])
     
-    var actionElement7 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement7 = ActionElement(action: { originator, targets -> () in
         if countElements(targets) != 1 {
             return
         }
@@ -102,7 +103,7 @@ public func character45() -> Character {
     var actionElement8 = ActionElement(damage: 30)
     var action5 = Action(name: "Irresistible Charm", type:.Support, elements: [actionElement7, actionElement8], actionChoice:.Or)
     
-    var actionElement9 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement9 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             if target.gender != Gender.Male {
                 continue
@@ -111,7 +112,7 @@ public func character45() -> Character {
             gameController!.roll("Damage Prevention", closure: {
                 let roll = gameController!.die1.toRaw()
                 if roll % 2 == 0 {
-                    damageCharacter(target, 30)
+                    damageCharacter(target, originator, 30)
                 }
             })
         }
@@ -133,17 +134,19 @@ public func character45() -> Character {
 }
 
 public func character61() -> Character {
-    var actionElement1 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement1 = ActionElement(action: { originator, targets -> () in
         if targets.count != 1 {
             return
         }
-        damageCharacter(targets[0], 20)
+        damageCharacter(targets[0], originator, 20)
         
         // create an embedded action element for preventing melee actions next turn
-        var embeddedActionElement = ActionElement(action: { (targets:Array<Character>) -> () in
-            targets[0].canTakeMeleeAction = false
+        var embeddedActionElement = ActionElement(action: { originator, targets -> () in
+            let target = targets[0] as Character
+            target.canTakeMeleeAction = false
             }, resolution: { (targets:Array<Character>) -> () in
-                targets[0].canTakeMeleeAction = true
+                let target = targets[0] as Character
+                target.canTakeMeleeAction = true
             }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
                 return targets // returns the target of the damage action
             }, numberOfTargets: .Some(1), start: .NextTurn)
@@ -152,11 +155,11 @@ public func character61() -> Character {
         }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
     var action1 = Action(name: "Spyscope", type:.Ranged, elements: [actionElement1])
     
-    var actionElement2 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement2 = ActionElement(action: { originator, targets -> () in
         if countElements(targets) != 1 {
             return
         }
-        damageCharacter(targets[0], 30)
+        damageCharacter(targets[0], originator, 30)
         gameController!.roll("Stun", {
             if gameController!.die1.toRaw() % 2 == 1 {
                 applyStun(targets[0])
@@ -165,7 +168,7 @@ public func character61() -> Character {
         }, resolution:nil, chooser:nil, numberOfTargets:.Some(1), start: .ThisTurn)
     var action2 = Action(name: "Flying Fist", type:.Melee, elements: [actionElement2])
     
-    var actionElement3  = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement3  = ActionElement(action: { originator, targets -> () in
         for target in targets {
             target.damageMitigation = { (var damage:Int) -> Int in
                 return 0
@@ -182,10 +185,10 @@ public func character61() -> Character {
     var actionElement5 = ActionElement(damage: 20)
     var action4 = Action(name: "Translator", type: .Healing, elements: [actionElement4, actionElement5])
     
-    var actionElement6 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement6 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             target.actionTrigger = ActionTrigger(description: "If you take an action this turn, you will take 20 damage and Fear.", effect: { (triggerTarget:Character) -> () in
-                damageCharacter(triggerTarget, 20)
+                damageCharacter(triggerTarget, originator, 20)
                 triggerTarget.fear = true
             })
         }
@@ -204,7 +207,7 @@ public func character61() -> Character {
         }, numberOfTargets:.Arbitrary, start:.NextTurn)
     var action5 = Action(name: "Vigilance", type: .Stance, elements: [actionElement6])
     
-    var actionElement7 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement7 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             target.fear = false
             target.stun = false
@@ -222,7 +225,7 @@ public func character61() -> Character {
         return targets
     }, numberOfTargets:.Arbitrary, start:.ThisTurn)
     
-    var actionElement8 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement8 = ActionElement(action: { originator, targets -> () in
         if targets.count != 1 {
             assert(false, "This should only target a single Character")
             return
@@ -242,7 +245,7 @@ public func character61() -> Character {
 }
 
 public func character59() -> Character {
-    var actionElement1 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement1 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             target.avoidsNegativeStatusEffects = true
         }
@@ -261,25 +264,25 @@ public func character59() -> Character {
     }, numberOfTargets:.Arbitrary, start:.NextTurn)
     var action1 = Action(name: "Fortify Party Members", type: .Support, elements: [actionElement1])
     
-    var actionElement2 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement2 = ActionElement(action: { originator, targets -> () in
         if targets.count != 1 {
             assert(false, "Action should have only one target")
             return
         }
         var target = targets[0]
-        damageCharacter(target, 20)
+        damageCharacter(target, originator, 20)
         applyFear(target)
         if target.parry != nil {
             for parry in target.parry! {
                 if target.life == parry {
-                    damageCharacter(target, 30)
+                    damageCharacter(target, originator, 30)
                 }
             }
         }
     }, resolution: nil, chooser: nil, numberOfTargets:.Some(1), start:.ThisTurn)
     var action2 = Action(name: "Lance of Light", type: .Melee, elements: [actionElement2])
     
-    var actionElement3 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement3 = ActionElement(action: { originator, targets -> () in
         if targets.count != 1 {
             assert(false, "Action should have only one target.")
             return
@@ -304,7 +307,7 @@ public func character59() -> Character {
         return []
     }, numberOfTargets: .Some(1), start: .NextTurn)
     var actionElement4 = ActionElement(damage: 30)
-    var actionElement5 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement5 = ActionElement(action: { originator, targets -> () in
         // fixme: show a picker for targets[0] actions
         var resolutionTargets = Array<Targets>()
         var resolutions = Array<Targets -> ()>()
@@ -316,7 +319,7 @@ public func character59() -> Character {
     }
     var action3 = Action(name: "Rynguard's Favor", type: .Stance, elements: [actionElement3, actionElement4, actionElement5])
     
-    var actionElement6 = ActionElement(action: { (targets:Array<Character>) -> () in
+    var actionElement6 = ActionElement(action: { originator, targets -> () in
         for target in targets {
             target.life += 10
             for reaction in target.reactions {
@@ -340,6 +343,41 @@ public func character59() -> Character {
         return alliedCharacters
     }, numberOfTargets: .Arbitrary, start: .ThisTurn)
     var action4 = Action(name: "Lightwave", type: .Support, elements: [actionElement6])
+    
+    var actionElement7 = ActionElement(action: { originator, targets -> () in
+        if targets.count > 1 {
+            assert(false, "Action should only have one target")
+            return
+        }
+        
+        var closure: (() -> ())!
+        closure = {
+            if gameController!.die1.toRaw() >= 3 {
+                damageCharacter(targets[0], originator, 10)
+                // fixme: pick a new target
+                gameController!.roll("Defender's Fury", closure: closure)
+            }
+        }
+        gameController!.roll("Defender's Fury", closure: closure)
+        
+    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action5 = Action(name: "Defender's Fury", type: .Melee, elements: [actionElement7])
+    
+    var actionElement8:ActionElement!
+    actionElement8 = ActionElement(action: { originator, targets in
+        if targets.count > 1 {
+            assert(false, "Action should only have one target")
+            return
+        }
+        let target = targets[0]
+        damageCharacter(target, originator, 20, false)
+        for reaction in target.reactions {
+            if reaction.healthTrigger == target.life {
+                applyHealing(originator, reaction.damage)
+            }
+        }
+    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action6 = Action(name: "Reactor Shield", type: .Stance, elements: [actionElement8])
     
     var reaction1 = Reaction(healthTrigger: 160, damage: 10)
     var reaction2 = Reaction(healthTrigger: 120, damage: 10)
