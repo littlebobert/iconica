@@ -47,6 +47,17 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        GCTurnBasedMatchHelper.sharedInstance()?.authenticateLocalUser({ viewController, error in
+            if viewController != nil {
+                self.presentViewController(viewController, animated: false, completion: {
+                    
+                })
+            } else if error != nil {
+                println("There was an error authenticating the local user")
+            }
+        })
+        
         /*
         var player1 = Player(name: "Bobert")
         var player2 = Player(name: "Don")

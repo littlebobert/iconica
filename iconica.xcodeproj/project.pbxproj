@@ -15,6 +15,8 @@
 		D01283B719AE7F850080F88A /* GameTest1.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B619AE7F850080F88A /* GameTest1.swift */; };
 		D01283B919AE80B30080F88A /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B819AE80B30080F88A /* GameModel.swift */; };
 		D01283BB19AE81330080F88A /* Characters.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283BA19AE81330080F88A /* Characters.swift */; };
+		D0CEC38519C0EDA000038F6C /* GCTurnBasedMatchHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CEC38419C0EDA000038F6C /* GCTurnBasedMatchHelper.swift */; };
+		D0CEC38619C0EFB500038F6C /* GameTest1.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B619AE7F850080F88A /* GameTest1.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +42,7 @@
 		D01283B619AE7F850080F88A /* GameTest1.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = GameTest1.swift; path = ../GameTest1.swift; sourceTree = "<group>"; };
 		D01283B819AE80B30080F88A /* GameModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
 		D01283BA19AE81330080F88A /* Characters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Characters.swift; sourceTree = "<group>"; };
+		D0CEC38419C0EDA000038F6C /* GCTurnBasedMatchHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GCTurnBasedMatchHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +87,7 @@
 				D01283B619AE7F850080F88A /* GameTest1.swift */,
 				D00DB33219A53D7200CFEDB6 /* AppDelegate.swift */,
 				D00DB33419A53D7200CFEDB6 /* ViewController.swift */,
+				D0CEC38419C0EDA000038F6C /* GCTurnBasedMatchHelper.swift */,
 				D01283B819AE80B30080F88A /* GameModel.swift */,
 				D01283BA19AE81330080F88A /* Characters.swift */,
 				D00DB33619A53D7200CFEDB6 /* Main.storyboard */,
@@ -218,9 +222,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				D00DB33519A53D7200CFEDB6 /* ViewController.swift in Sources */,
+				D0CEC38519C0EDA000038F6C /* GCTurnBasedMatchHelper.swift in Sources */,
 				D00DB33319A53D7200CFEDB6 /* AppDelegate.swift in Sources */,
 				D01283B919AE80B30080F88A /* GameModel.swift in Sources */,
 				D01283BB19AE81330080F88A /* Characters.swift in Sources */,
+				D0CEC38619C0EFB500038F6C /* GameTest1.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
