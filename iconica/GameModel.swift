@@ -257,8 +257,7 @@ public class GameController : NSObject {
             let action = self.currentPlayer.character!.actions[rollValue-1]
             println("attempting action \(rollValue) for \(self.currentPlayer.character!.name)")
             
-            // fixme: check to see that character can perform this action type
-            if action.type != .Melee || self.currentPlayer.character!.canTakeMeleeAction {
+            if self.currentPlayer.character!.allowedActions & action.type {
                 self.performAction(action, resolutions: &resolutions, resolutionTargets: &resolutionTargets)
             }
             
@@ -277,8 +276,44 @@ public class GameController : NSObject {
     }
 }
 
-public enum ActionType {
-    case Melee, Ranged, Status, Support, Healing, Stance
+public struct ActionTypes : RawOptionSetType, BooleanType {
+    private var value: UInt = 0
+    
+    init(_ value: UInt) {
+        self.value = value
+    }
+    
+    public static func fromMask(raw: UInt) -> ActionTypes {
+        return self(raw)
+    }
+    
+    public static func fromRaw(raw: UInt) -> ActionTypes? {
+        return self(raw)
+    }
+    
+    public func toRaw() -> UInt {
+        return value
+    }
+    
+    public var boolValue: Bool {
+        return value != 0
+    }
+    
+    public static var allZeros: ActionTypes {
+        return self(0)
+    }
+    
+    public static func convertFromNilLiteral() -> ActionTypes {
+        return self(0)
+    }
+    
+    static var None: ActionTypes        { return self(0b000000) }
+    static var Melee: ActionTypes       { return self(0b000001) }
+    static var Ranged: ActionTypes      { return self(0b000010) }
+    static var Status: ActionTypes      { return self(0b000100) }
+    static var Support: ActionTypes     { return self(0b001000) }
+    static var Healing: ActionTypes     { return self(0b010000) }
+    static var Stance: ActionTypes      { return self(0b100000) }
 }
 
 public enum ActionChoice {
@@ -288,11 +323,11 @@ public enum ActionChoice {
 public class Action {
     var name:String
     public var elements:Array<ActionElement>
-    var type:ActionType
+    var type:ActionTypes
     var actionChoice:ActionChoice
     public var character:Character?
     
-    init(name:String, type:ActionType, elements:Array<ActionElement>, actionChoice:ActionChoice) {
+    init(name:String, type:ActionTypes, elements:Array<ActionElement>, actionChoice:ActionChoice) {
         self.name = name
         self.type = type
         self.elements = elements
@@ -302,7 +337,7 @@ public class Action {
         }
     }
     
-    convenience init(name:String, type:ActionType, elements:Array<ActionElement>) {
+    convenience init(name:String, type:ActionTypes, elements:Array<ActionElement>) {
         self.init(name:name, type:type, elements:elements, actionChoice:.And)
     }
 }
@@ -492,7 +527,6 @@ public class Character {
     var confusion:Bool
     var blind:Bool
     var restoration:Bool
-    public var canTakeMeleeAction:Bool
     public var actionTrigger:ActionTrigger?
     public var player:Player?
     var avoidsNegativeStatusEffects:Bool
@@ -504,6 +538,7 @@ public class Character {
     public var charge:Character?
     public var canBeTargetedByRangedAction:Bool
     public var damageApplicator:((Character, Int) -> ())?
+    public var allowedActions:ActionTypes
     
     init(name:String, life:Int, gender:Gender, classType:Class, faction:Faction, actions:Array<Action>, reactions:Array<Reaction>) {
         self.name = name
@@ -521,9 +556,9 @@ public class Character {
         self.confusion = false
         self.blind = false
         self.restoration = false
-        self.canTakeMeleeAction = true
         self.avoidsNegativeStatusEffects = false
         self.canBeTargetedByRangedAction = true
+        self.allowedActions = .Melee | .Ranged | .Status | .Healing | .Support | .Stance
         
         for action in self.actions {
             action.character = self

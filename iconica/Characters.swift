@@ -28,6 +28,14 @@ func enemyCharacterChooser(originator:Character, allCharacters:Array<Character>)
     return characters
 }
 
+func friendlyCharactersFilter(character:Character) -> Bool {
+    return character.player === gameController!.currentPlayer
+}
+
+func enemyCharactersFilter(character:Character) -> Bool {
+    return character.player !== gameController!.currentPlayer
+}
+
 public func character45() -> Character {
     var actionElement1 = ActionElement(healing: 30)
     var actionElement2 = ActionElement(damage: 30)
@@ -90,7 +98,6 @@ public func character45() -> Character {
         return characters
     }
     var action3 = Action(name: "Transfix", type:.Stance, elements: [actionElement4, actionElement5])
-    println("finished creating action: \(action3.elements[0].chooser)")
     
     var actionElement6 = ActionElement(action: { originator, targets -> () in
         if countElements(targets) != 1 {
@@ -101,7 +108,6 @@ public func character45() -> Character {
             if gameController!.die1.toRaw() >= 5 {
                 applyFear(targets[0])
             }
-            gameController!.continueGame()
         })
     }, numberOfTargets:.Some(1), start: .ThisTurn)
     var action4 = Action(name: "Backstab", type:.Melee, elements: [actionElement6])
@@ -118,7 +124,6 @@ public func character45() -> Character {
                 var resolutions = Array<Targets -> ()>()
                 gameController!.performAction(targets[0].actions[roll-1], resolutions: &resolutions, resolutionTargets: &resolutionTargets)
             }
-            gameController!.continueGame()
         })
     }, numberOfTargets:.Some(1), start: .ThisTurn)
     actionElement7.targetFilter = { (character:Character) in
@@ -167,11 +172,11 @@ public func character61() -> Character {
         // create an embedded action element for preventing melee actions next turn
         var embeddedActionElement = ActionElement(action: { originator, targets -> () in
             let target = targets[0] as Character
-            target.canTakeMeleeAction = false
+            target.allowedActions = target.allowedActions ^ .Melee
         }, numberOfTargets: .Some(1), start: .NextTurn)
         embeddedActionElement.resolution = { (targets:Array<Character>) -> () in
             let target = targets[0] as Character
-            target.canTakeMeleeAction = true
+            target.allowedActions = target.allowedActions | .Melee
         }
         embeddedActionElement.chooser = { (originator, allCharacters) -> Array<Character> in
             return targets // returns the target of the damage action
@@ -179,7 +184,7 @@ public func character61() -> Character {
         gameController!.actionsForNextTurn.append(embeddedActionElement)
         embeddedActionElement.character = originator
         
-        }, numberOfTargets: .Some(1), start: .ThisTurn)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action1 = Action(name: "Spyscope", type:.Ranged, elements: [actionElement1])
     
     var actionElement2 = ActionElement(action: { originator, targets -> () in
@@ -326,9 +331,7 @@ public func character59() -> Character {
         gameController!.performAction(targets[0].actions[0], resolutions: &resolutions, resolutionTargets: &resolutionTargets)
         gameController!.continueGame()
     }, numberOfTargets: .Some(1), start: .ThisTurn)
-    actionElement5.targetFilter = { (character:Character) -> Bool in
-        return character.player === gameController!.currentPlayer
-    }
+    actionElement5.targetFilter = friendlyCharactersFilter
     var action3 = Action(name: "Rynguard's Favor", type: .Stance, elements: [actionElement3, actionElement4, actionElement5])
     
     var actionElement6 = ActionElement(action: { originator, targets -> () in
@@ -338,6 +341,7 @@ public func character59() -> Character {
                 if reaction.healthTrigger == target.life {
                     var embeddedActionElement = ActionElement(damage: reaction.damage)
                     var embeddedAction = Action(name: "Reprisal", type: .Melee, elements: [embeddedActionElement])
+                    embeddedAction.character = target
                     var resolutionTargets = Array<Targets>()
                     var resolutions = Array<Targets -> ()>()
                     gameController!.performAction(embeddedAction, resolutions: &resolutions, resolutionTargets: &resolutionTargets)
@@ -463,9 +467,60 @@ func character65() -> Character {
     actionElement4.chooser = friendlyCharacterChooser
     var action3 = Action(name: "Draw Fire", type: .Stance, elements: [actionElement3, actionElement4])
     
+    var actionElement5 = ActionElement(action: { originator, targets -> () in
+        if targets.count != 1 {
+            return
+        }
+        damageCharacter(targets[0], originator, 20)
+        
+        // create an embedded action element for preventing actions next turn
+        var embeddedActionElement = ActionElement(action: { originator, targets -> () in
+            let target = targets[0] as Character
+            target.allowedActions = .None
+            }, numberOfTargets: .Some(1), start: .NextTurn)
+        embeddedActionElement.resolution = { (targets:Array<Character>) -> () in
+            let target = targets[0] as Character
+            // fixme: allow only those actions which were disallowed last turn
+            target.allowedActions = .Melee | .Ranged | .Status | .Support | .Healing | .Stance
+        }
+        embeddedActionElement.chooser = { (originator, allCharacters) -> Array<Character> in
+            return targets // returns the target of the damage action
+        }
+        gameController!.actionsForNextTurn.append(embeddedActionElement)
+        embeddedActionElement.character = originator
+        
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var actionElement6 = ActionElement(action: { originator, targets in
+        gameController!.roll("Charge’s Action", {
+            // perform the target's action
+            let roll = gameController!.die1.toRaw()
+            if targets[0].actions.count >= roll {
+                var resolutionTargets = Array<Targets>()
+                var resolutions = Array<Targets -> ()>()
+                gameController!.performAction(targets[0].actions[roll-1], resolutions: &resolutions, resolutionTargets: &resolutionTargets)
+            }
+        })
+    }, numberOfTargets: .Arbitrary, start: .ThisTurn)
+    actionElement6.chooser = { (originator, allCharacters) -> Array<Character> in
+        return [originator.charge!]
+    }
+    var action4 = Action(name: "Double Team", type: .Melee, elements: [actionElement5, actionElement6])
     
+    var actionElement7 = ActionElement(damageWithPoison: 20)
+    var action5 = Action(name: "Throwing Spike", type: .Ranged, elements: [actionElement7])
     
-    var character = Character(name: "Fangrune Guardian", life: 200, gender: .Female, classType: .Protective, faction: .Independent, actions: [], reactions: [])
+    var actionElement8 = ActionElement(damage: 30)
+    var actionElement9 = ActionElement(action: { originator, targets in
+        // fixme: display a negative status effects picker
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    actionElement9.targetFilter = friendlyCharactersFilter
+    var action6 = Action(name: "Protector’s Spear", type: .Melee, elements: [actionElement8, actionElement9])
+    
+    var reaction1 = Reaction(healthTrigger: 170, damage: 10)
+    var reaction2 = Reaction(healthTrigger: 130, damage: 10)
+    var reaction3 = Reaction(healthTrigger: 80, damage: 10)
+    
+    var character = Character(name: "Fangrune Guardian", life: 200, gender: .Female, classType: .Protective, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1, reaction2, reaction3])
     character.parry = [90, 140, 180]
     
     return character
