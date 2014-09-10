@@ -119,7 +119,8 @@ public class GameController : NSObject {
         // fixme: display UI showing off this ActionElement
         var targets: Targets
         if element.chooser != nil {
-            targets = element.chooser!(self.allCharacters())
+            let originator = element.parentAction != nil ? element.parentAction!.character! : element.character
+            targets = element.chooser!(originator!, self.allCharacters())
         } else {
             if self.testTargets != nil {
                 targets = self.testTargets![0]
@@ -314,14 +315,19 @@ public func damageCharacter(character:Character, attacker:Character, var damage:
     
     if character.damageMitigation != nil {
         damage = character.damageMitigation!(damage)
-        character.life -= damage
+    }
+    
+    if character.damageApplicator != nil {
+        character.damageApplicator!(attacker, damage)
     } else {
         character.life -= damage
     }
     
-    for reaction in character.reactions {
-        if reaction.healthTrigger == character.life {
-            damageCharacter(character, attacker, reaction.damage)
+    if skipReaction == false {
+        for reaction in character.reactions {
+            if reaction.healthTrigger == character.life {
+                damageCharacter(character, attacker, reaction.damage)
+            }
         }
     }
 }
@@ -387,10 +393,11 @@ public class ActionElement {
     var action:(Character, Array<Character>) -> ()
     var numberOfTargets:NumberOfTargets
     var resolution:(Array<Character> -> ())?
-    public var chooser:(Array<Character> -> Array<Character>)?
+    public var chooser:((Character, Array<Character>) -> Array<Character>)?
     var targetFilter:(Character -> Bool)?
     var start:Turn
     public var parentAction:Action?
+    public var character:Character? // for embedded ActionElements that have no parent Action
     
     init(var damage:Int) {
         self.action = {originator, targets -> () in
@@ -426,10 +433,8 @@ public class ActionElement {
         self.start = .ThisTurn
     }
     
-    init(action:((Character, Array<Character>) -> ()), resolution:(Array<Character> -> ())?, chooser:(Array<Character> -> Array<Character>)?, numberOfTargets:NumberOfTargets, start:Turn) {
+    init(action:((Character, Array<Character>) -> ()), numberOfTargets:NumberOfTargets, start:Turn) {
         self.action = action
-        self.resolution = resolution
-        self.chooser = chooser
         self.numberOfTargets = numberOfTargets
         self.start = start
     }
@@ -467,7 +472,7 @@ public enum Faction {
 }
 
 public enum Class {
-    case Offensive, Defensive, Adaptive, Disruptive, Supportive
+    case Offensive, Defensive, Adaptive, Disruptive, Supportive, Protective
 }
 
 public class Character {
@@ -496,6 +501,9 @@ public class Character {
     var antidote:Array<Int>?
     var courage:Array<Int>?
     var focus:Array<Int>?
+    public var charge:Character?
+    public var canBeTargetedByRangedAction:Bool
+    public var damageApplicator:((Character, Int) -> ())?
     
     init(name:String, life:Int, gender:Gender, classType:Class, faction:Faction, actions:Array<Action>, reactions:Array<Reaction>) {
         self.name = name
@@ -515,6 +523,7 @@ public class Character {
         self.restoration = false
         self.canTakeMeleeAction = true
         self.avoidsNegativeStatusEffects = false
+        self.canBeTargetedByRangedAction = true
         
         for action in self.actions {
             action.character = self

@@ -199,6 +199,8 @@ class GameTest1: XCTestCase {
         XCTAssert(character1.fear == false, "Character should not have Fear")
         XCTAssert(character1.life == character1InitialLife - 120, "Character should have 120 less life.")
         XCTAssert(character2.life == character2InitialLife - 80, "Character should have 90 less life")
+        
+        
     }
 
     func testPerformanceExample() {

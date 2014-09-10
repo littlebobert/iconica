@@ -8,6 +8,26 @@
 
 import Foundation
 
+func friendlyCharacterChooser(originator:Character, allCharacters:Array<Character>) -> Array<Character> {
+    var characters = Array<Character>()
+    for character in allCharacters {
+        if character.player === gameController!.currentPlayer {
+            characters.append(character)
+        }
+    }
+    return characters
+}
+
+func enemyCharacterChooser(originator:Character, allCharacters:Array<Character>) -> Array<Character> {
+    var characters = Array<Character>()
+    for character in allCharacters {
+        if character.player !== gameController!.currentPlayer {
+            characters.append(character)
+        }
+    }
+    return characters
+}
+
 public func character45() -> Character {
     var actionElement1 = ActionElement(healing: 30)
     var actionElement2 = ActionElement(damage: 30)
@@ -17,7 +37,7 @@ public func character45() -> Character {
         for target in targets {
             applyBlind(target)
         }
-    }, resolution: nil, chooser: nil, numberOfTargets:.Some(3), start:.ThisTurn)
+    }, numberOfTargets:.Some(3), start:.ThisTurn)
     var action2 = Action(name: "Glaring Beauty", type: .Status, elements: [actionElement3])
     
     var actionElement4 = ActionElement(action: { originator, targets -> () in
@@ -25,10 +45,12 @@ public func character45() -> Character {
             return
         }
         targets[0].targetable = false
-    }, resolution: { (targets:Array<Character>) -> () in
+    }, numberOfTargets:.Some(1), start:.NextTurn)
+    actionElement4.resolution = { (targets:Array<Character>) -> () in
         let target = targets[0] as Character
         target.targetable = true
-    }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
+    }
+    actionElement4.chooser = { (originator, allCharacters) -> Array<Character> in
         for character in allCharacters {
             if character.name == "Wandering Siryn" {
                 return [character]
@@ -36,7 +58,7 @@ public func character45() -> Character {
         }
         assert(false, "Should have found Wandering Siryn")
         return []
-    }, numberOfTargets:.Some(1), start:.NextTurn)
+    }
     
     var actionElement5 = ActionElement(action: { originator, targets -> () in
         for target in targets {
@@ -50,13 +72,15 @@ public func character45() -> Character {
                 }
             }
         }
-    }, resolution: { (targets:Array<Character>) -> () in
+    }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    actionElement5.resolution = { (targets:Array<Character>) -> () in
         for target in targets {
             if target.gender == .Female {
                 target.damageMitigation = nil
             }
         }
-    }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
+    }
+    actionElement5.chooser = { (originator, allCharacters) -> Array<Character> in
         var characters = Array<Character>()
         for character in allCharacters {
             if character.gender == .Female {
@@ -64,7 +88,7 @@ public func character45() -> Character {
             }
         }
         return characters
-    }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    }
     var action3 = Action(name: "Transfix", type:.Stance, elements: [actionElement4, actionElement5])
     println("finished creating action: \(action3.elements[0].chooser)")
     
@@ -79,7 +103,7 @@ public func character45() -> Character {
             }
             gameController!.continueGame()
         })
-    }, resolution:nil, chooser:nil, numberOfTargets:.Some(1), start: .ThisTurn)
+    }, numberOfTargets:.Some(1), start: .ThisTurn)
     var action4 = Action(name: "Backstab", type:.Melee, elements: [actionElement6])
     
     var actionElement7 = ActionElement(action: { originator, targets -> () in
@@ -96,7 +120,7 @@ public func character45() -> Character {
             }
             gameController!.continueGame()
         })
-    }, resolution:nil, chooser:nil, numberOfTargets:.Some(1), start: .ThisTurn)
+    }, numberOfTargets:.Some(1), start: .ThisTurn)
     actionElement7.targetFilter = { (character:Character) in
         return character.gender == .Male
     }
@@ -116,7 +140,7 @@ public func character45() -> Character {
                 }
             })
         }
-    }, resolution: nil, chooser: nil, numberOfTargets:.Some(2), start:.ThisTurn)
+    }, numberOfTargets:.Some(2), start:.ThisTurn)
     actionElement9.targetFilter = { (character:Character) in
         return character.gender == .Male
     }
@@ -144,15 +168,18 @@ public func character61() -> Character {
         var embeddedActionElement = ActionElement(action: { originator, targets -> () in
             let target = targets[0] as Character
             target.canTakeMeleeAction = false
-            }, resolution: { (targets:Array<Character>) -> () in
-                let target = targets[0] as Character
-                target.canTakeMeleeAction = true
-            }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
-                return targets // returns the target of the damage action
-            }, numberOfTargets: .Some(1), start: .NextTurn)
+        }, numberOfTargets: .Some(1), start: .NextTurn)
+        embeddedActionElement.resolution = { (targets:Array<Character>) -> () in
+            let target = targets[0] as Character
+            target.canTakeMeleeAction = true
+        }
+        embeddedActionElement.chooser = { (originator, allCharacters) -> Array<Character> in
+            return targets // returns the target of the damage action
+        }
         gameController!.actionsForNextTurn.append(embeddedActionElement)
+        embeddedActionElement.character = originator
         
-        }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+        }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action1 = Action(name: "Spyscope", type:.Ranged, elements: [actionElement1])
     
     var actionElement2 = ActionElement(action: { originator, targets -> () in
@@ -165,7 +192,7 @@ public func character61() -> Character {
                 applyStun(targets[0])
             }
         })
-        }, resolution:nil, chooser:nil, numberOfTargets:.Some(1), start: .ThisTurn)
+        }, numberOfTargets:.Some(1), start: .ThisTurn)
     var action2 = Action(name: "Flying Fist", type:.Melee, elements: [actionElement2])
     
     var actionElement3  = ActionElement(action: { originator, targets -> () in
@@ -174,11 +201,12 @@ public func character61() -> Character {
                 return 0
             }
         }
-        }, resolution: { (targets:Array<Character>) -> () in
-            for target in targets {
-                target.damageMitigation = nil
-            }
-        }, chooser: nil, numberOfTargets:.Some(3), start:.NextTurn)
+    }, numberOfTargets:.Some(3), start:.NextTurn)
+    actionElement3.resolution = { (targets:Array<Character>) -> () in
+        for target in targets {
+            target.damageMitigation = nil
+        }
+    }
     var action3 = Action(name: "Evasive Maneuvers", type: .Stance, elements: [actionElement3])
     
     var actionElement4 = ActionElement(healing: 20)
@@ -192,19 +220,14 @@ public func character61() -> Character {
                 triggerTarget.fear = true
             })
         }
-        }, resolution: { (targets:Array<Character>) -> () in
-            for target in targets {
-                target.actionTrigger = nil
-            }
-        }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
-            var targets = Array<Character>()
-            for character in allCharacters {
-                if character.player === gameController!.currentPlayer {
-                    targets.append(character)
-                }
-            }
-            return targets
-        }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    actionElement6.resolution = { (targets:Array<Character>) -> () in
+        for target in targets {
+            target.actionTrigger = nil
+        }
+    }
+    actionElement6.chooser = friendlyCharacterChooser
+    
     var action5 = Action(name: "Vigilance", type: .Stance, elements: [actionElement6])
     
     var actionElement7 = ActionElement(action: { originator, targets -> () in
@@ -215,24 +238,17 @@ public func character61() -> Character {
             target.confusion = false
             target.blind = false
         }
-    }, resolution: nil, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
-        var targets = Array<Character>()
-        for character in allCharacters {
-            if character.player === gameController!.currentPlayer {
-                targets.append(character)
-            }
-        }
-        return targets
     }, numberOfTargets:.Arbitrary, start:.ThisTurn)
+    actionElement7.chooser = friendlyCharacterChooser
     
     var actionElement8 = ActionElement(action: { originator, targets -> () in
         if targets.count != 1 {
             assert(false, "This should only target a single Character")
             return
         }
-        // fixme: perform action #4
+        // fixme: perform action #4 on one friendly character if possible
         
-    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action6 = Action(name: "Inspire Crew", type: .Ranged, elements: [actionElement7, actionElement8])
     
     var reaction1 = Reaction(healthTrigger: 160, damage: 20)
@@ -249,19 +265,13 @@ public func character59() -> Character {
         for target in targets {
             target.avoidsNegativeStatusEffects = true
         }
-    }, resolution: { (targets:Array<Character>) -> () in
+    }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    actionElement1.resolution = { (targets:Array<Character>) -> () in
         for target in targets {
             target.avoidsNegativeStatusEffects = false
         }
-    }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
-        var targets = Array<Character>()
-        for character in allCharacters {
-            if character.player !== gameController!.currentPlayer {
-                targets.append(character)
-            }
-        }
-        return targets
-    }, numberOfTargets:.Arbitrary, start:.NextTurn)
+    }
+    actionElement1.chooser = enemyCharacterChooser
     var action1 = Action(name: "Fortify Party Members", type: .Support, elements: [actionElement1])
     
     var actionElement2 = ActionElement(action: { originator, targets -> () in
@@ -279,7 +289,7 @@ public func character59() -> Character {
                 }
             }
         }
-    }, resolution: nil, chooser: nil, numberOfTargets:.Some(1), start:.ThisTurn)
+    }, numberOfTargets:.Some(1), start:.ThisTurn)
     var action2 = Action(name: "Lance of Light", type: .Melee, elements: [actionElement2])
     
     var actionElement3 = ActionElement(action: { originator, targets -> () in
@@ -295,9 +305,11 @@ public func character59() -> Character {
         target.damageMitigation = { (var damage:Int) -> Int in
             return 0
         }
-    }, resolution: { (targets:Array<Character>) -> () in
+    }, numberOfTargets: .Some(1), start: .NextTurn)
+    actionElement3.resolution = { (targets:Array<Character>) -> () in
         targets[0].damageMitigation = nil
-    }, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
+    }
+    actionElement3.chooser = { (originator, allCharacters) -> Array<Character> in
         for character in allCharacters {
             if character.name == "Lylean Sentinel" {
                 return [character]
@@ -305,15 +317,15 @@ public func character59() -> Character {
         }
         assert(false, "Should have found Lylean Sentinel")
         return []
-    }, numberOfTargets: .Some(1), start: .NextTurn)
+    }
     var actionElement4 = ActionElement(damage: 30)
     var actionElement5 = ActionElement(action: { originator, targets -> () in
-        // fixme: show a picker for targets[0] actions
+        // fixme: show a picker for targets[0]'s actions
         var resolutionTargets = Array<Targets>()
         var resolutions = Array<Targets -> ()>()
         gameController!.performAction(targets[0].actions[0], resolutions: &resolutions, resolutionTargets: &resolutionTargets)
         gameController!.continueGame()
-    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
     actionElement5.targetFilter = { (character:Character) -> Bool in
         return character.player === gameController!.currentPlayer
     }
@@ -333,15 +345,8 @@ public func character59() -> Character {
                 }
             }
         }
-    }, resolution: nil, chooser: { (allCharacters:Array<Character>) -> Array<Character> in
-        var alliedCharacters = Array<Character>()
-        for character in allCharacters {
-            if character.player === gameController!.currentPlayer {
-                alliedCharacters.append(character)
-            }
-        }
-        return alliedCharacters
     }, numberOfTargets: .Arbitrary, start: .ThisTurn)
+    actionElement6.chooser = friendlyCharacterChooser
     var action4 = Action(name: "Lightwave", type: .Support, elements: [actionElement6])
     
     var actionElement7 = ActionElement(action: { originator, targets -> () in
@@ -360,7 +365,7 @@ public func character59() -> Character {
         }
         gameController!.roll("Defender's Fury", closure: closure)
         
-    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action5 = Action(name: "Defender's Fury", type: .Melee, elements: [actionElement7])
     
     var actionElement8:ActionElement!
@@ -370,13 +375,13 @@ public func character59() -> Character {
             return
         }
         let target = targets[0]
-        damageCharacter(target, originator, 20, false)
+        damageCharacter(target, originator, 20, true)
         for reaction in target.reactions {
             if reaction.healthTrigger == target.life {
                 applyHealing(originator, reaction.damage)
             }
         }
-    }, resolution: nil, chooser: nil, numberOfTargets: .Some(1), start: .ThisTurn)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action6 = Action(name: "Reactor Shield", type: .Stance, elements: [actionElement8])
     
     var reaction1 = Reaction(healthTrigger: 160, damage: 10)
@@ -386,6 +391,82 @@ public func character59() -> Character {
     var character = Character(name: "Lylean Sentinel", life: 190, gender: .Male, classType: .Defensive, faction: .Protectorate, actions: [action1, action2, action3, action4], reactions: [reaction1, reaction2, reaction3])
     character.courage = [20, 30, 60, 90, 100, 130, 140]
     character.parry = [10, 40, 150, 170]
+    
+    return character
+}
+
+func character65() -> Character {
+    
+    var actionElement1 = ActionElement(action: { originator, targets in
+        if targets.count > 1 {
+            assert(false, "Should only have one target.")
+            return
+        }
+        let target = targets[0]
+        
+        // fixme: show a life value chooser
+        applyHealing(target, 50)
+        damageCharacter(originator, originator, 50)
+        
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    actionElement1.chooser = { (originator, allCharacters) -> Array<Character> in
+        if originator.charge == nil {
+            assert(false, "Guardian should have a charge.")
+            return []
+        }
+        return [originator.charge!]
+    }
+    var action1 = Action(name: "Sacrifice", type: .Support, elements: [actionElement1])
+    
+    var actionElement2 = ActionElement(action: { originator, targets in
+        applyHealing(originator, 20)
+        if originator.charge == nil {
+            assert(false, "Guardian should have a charge.")
+            return
+        }
+        applyHealing(originator.charge!, 30)
+        
+    }, numberOfTargets: .Arbitrary, start: .ThisTurn)
+    actionElement2.chooser = { (originator, allCharacters) -> Array<Character> in
+        return [originator.charge!]
+    }
+    var action2 = Action(name: "Solace", type: .Healing, elements: [actionElement2])
+    
+    var actionElement3 = ActionElement(action: { originator, targets in
+        for target in targets {
+            target.canBeTargetedByRangedAction = false
+        }
+        originator.canBeTargetedByRangedAction = true
+    }, numberOfTargets: .Arbitrary, start: .NextTurn)
+    actionElement3.resolution = { targets in
+        for target in targets {
+            target.canBeTargetedByRangedAction = true
+        }
+    }
+    actionElement3.chooser = friendlyCharacterChooser
+    
+    var actionElement4 = ActionElement(action: { originator, targets in
+        let target = targets[0]
+        if target !== originator {
+            assert(false, "Target should be the action's originator")
+            return
+        }
+        target.damageApplicator = { attacker, damage in
+            target.life -= damage
+            attacker.life -= 40
+        }
+    }, numberOfTargets: .Arbitrary, start: .NextTurn)
+    actionElement4.resolution = { targets in
+        let target = targets[0]
+        target.damageApplicator = nil
+    }
+    actionElement4.chooser = friendlyCharacterChooser
+    var action3 = Action(name: "Draw Fire", type: .Stance, elements: [actionElement3, actionElement4])
+    
+    
+    
+    var character = Character(name: "Fangrune Guardian", life: 200, gender: .Female, classType: .Protective, faction: .Independent, actions: [], reactions: [])
+    character.parry = [90, 140, 180]
     
     return character
 }
