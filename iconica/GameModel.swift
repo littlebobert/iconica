@@ -21,19 +21,44 @@ public class RollDelegate : NSObject {
         self.rollClosure = rollClosure
     }
     
+    func numberOfDice() -> Int {
+        return 1
+    }
+    
     func alertView(alertView: UIAlertView!, clickedButtonAtIndex buttonIndex: Int) {
         self.rollClosure()
         gameController!.continueGame()
+    }
+    
+    func message() -> String {
+        return "You rolled a \(gameController!.die1.toRaw())."
+    }
+}
+
+public class RollTwoDelegate : RollDelegate {
+    override func numberOfDice() -> Int {
+        return 2
+    }
+    
+    override func message() -> String {
+        return "You rolled a \(gameController!.die1.toRaw()) and a \(gameController!.die2.toRaw())."
     }
 }
 
 public struct TestRoll {
     public var msg:String
     var die1Value:Int
+    var die2Value:Int?
     
     public init(msg:String, die1Value:Int) {
         self.msg = msg
         self.die1Value = die1Value
+    }
+    
+    public init(msg:String, die1Value:Int, die2Value:Int) {
+        self.msg = msg
+        self.die1Value = die1Value
+        self.die2Value = die2Value
     }
 }
 
@@ -43,6 +68,7 @@ public class GameController : NSObject {
     var players:Array<Player>
     var turn:Int
     var die1:Die
+    var die2:Die
     var rollDelegate:RollDelegate?
     public var actionsForNextTurn:Array<ActionElement>
     var actionsForTurnAfterNext:Array<ActionElement>
@@ -55,6 +81,7 @@ public class GameController : NSObject {
         self.currentPlayer = players[0]
         self.turn = 0
         self.die1 = Die()
+        self.die2 = Die()
         self.actionsForNextTurn = Array<ActionElement>()
         self.actionsForTurnAfterNext = Array<ActionElement>()
         self.gameLogic = Array<() -> ()>()
@@ -67,6 +94,7 @@ public class GameController : NSObject {
         self.currentPlayer = players[0]
         self.turn = 0
         self.die1 = Die()
+        self.die2 = Die()
         self.actionsForNextTurn = Array<ActionElement>()
         self.actionsForTurnAfterNext = Array<ActionElement>()
         self.gameLogic = Array<() -> ()>()
@@ -86,7 +114,7 @@ public class GameController : NSObject {
     
     func alertView(alertView: UIAlertView!, clickedButtonAtIndex buttonIndex: Int) {
         self.die1.roll()
-        var alert = UIAlertView(title: "You rolled a \(die1.toRaw())", message: "", delegate:rollDelegate, cancelButtonTitle: "OK")
+        var alert = UIAlertView(title: self.rollDelegate!.message(), message: "", delegate:rollDelegate, cancelButtonTitle: "OK")
         alert.show()
     }
     
@@ -114,6 +142,36 @@ public class GameController : NSObject {
         alert.show()
     }
     
+    func rollTwo(msg:String, closure:(() -> ())?) {
+        if self.testRolls != nil {
+            var testRoll = self.testRolls![0]
+            assert(testRoll.msg == msg, "The roll message was incorrect")
+            if let die1Value = Die.fromRaw(testRoll.die1Value) {
+                self.die1 = die1Value
+            } else {
+                assert(false, "The die roll should convert into a Die")
+            }
+            assert(testRoll.die2Value != nil, "Test roll should have a second die roll")
+            if let die2Value = Die.fromRaw(testRoll.die2Value!) {
+                self.die2 = die2Value
+            } else {
+                assert(false, "The die roll should convert into a Die")
+            }
+            
+            self.testRolls!.removeAtIndex(0)
+            closure!()
+            gameController!.continueGame()
+            return
+        }
+        
+        self.rollDelegate = nil
+        if closure != nil {
+            self.rollDelegate = RollTwoDelegate(rollClosure:closure!)
+        }
+        var alert = UIAlertView(title: "Roll for \(msg)", message: "", delegate:self, cancelButtonTitle: "OK")
+        alert.show()
+    }
+    
     func performActionElement(element:ActionElement, inout resolutions:Array<Targets -> ()>, inout resolutionTargets:Array<Targets>) {
         
         // fixme: display UI showing off this ActionElement
@@ -128,6 +186,7 @@ public class GameController : NSObject {
             } else {
                 // fixme: display Character picker (for element.numberOfTargets Characters)
                 // fixme: only show the Character picker for Characters that pass .targetFilter
+                // fixme: only show the Character picker for Characters that don't .avoidsActionTypes
                 if self.currentPlayer === self.players[0] {
                     targets = [self.players[1].character!]
                 } else {
@@ -432,7 +491,10 @@ public class ActionElement {
     var targetFilter:(Character -> Bool)?
     var start:Turn
     public var parentAction:Action?
-    public var character:Character? // for embedded ActionElements that have no parent Action
+    
+    // for embedded ActionElements that have no parent Action
+    public var character:Character?
+    public var actionType:ActionTypes?
     
     init(var damage:Int) {
         self.action = {originator, targets -> () in
@@ -511,7 +573,7 @@ public enum Class {
 }
 
 public class Character {
-    var name:String
+    public var name:String
     public var life:Int
     public var maxLife:Int
     var classType:Class
@@ -536,9 +598,9 @@ public class Character {
     var courage:Array<Int>?
     var focus:Array<Int>?
     public var charge:Character?
-    public var canBeTargetedByRangedAction:Bool
     public var damageApplicator:((Character, Int) -> ())?
     public var allowedActions:ActionTypes
+    public var avoidsActionTypes:ActionTypes
     
     init(name:String, life:Int, gender:Gender, classType:Class, faction:Faction, actions:Array<Action>, reactions:Array<Reaction>) {
         self.name = name
@@ -557,8 +619,8 @@ public class Character {
         self.blind = false
         self.restoration = false
         self.avoidsNegativeStatusEffects = false
-        self.canBeTargetedByRangedAction = true
         self.allowedActions = .Melee | .Ranged | .Status | .Healing | .Support | .Stance
+        self.avoidsActionTypes = .None
         
         for action in self.actions {
             action.character = self
@@ -595,7 +657,7 @@ public enum Die: Int {
 }
 
 public class Player {
-    var name:String
+    public var name:String
     public var character:Character?
     
     public init(name:String) {

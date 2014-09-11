@@ -183,6 +183,7 @@ public func character61() -> Character {
         }
         gameController!.actionsForNextTurn.append(embeddedActionElement)
         embeddedActionElement.character = originator
+        embeddedActionElement.actionType = .Ranged
         
     }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action1 = Action(name: "Spyscope", type:.Ranged, elements: [actionElement1])
@@ -438,13 +439,13 @@ func character65() -> Character {
     
     var actionElement3 = ActionElement(action: { originator, targets in
         for target in targets {
-            target.canBeTargetedByRangedAction = false
+            target.avoidsActionTypes |= .Ranged
         }
-        originator.canBeTargetedByRangedAction = true
+        originator.avoidsActionTypes ^= .Ranged
     }, numberOfTargets: .Arbitrary, start: .NextTurn)
     actionElement3.resolution = { targets in
         for target in targets {
-            target.canBeTargetedByRangedAction = true
+            target.avoidsActionTypes ^= .Ranged
         }
     }
     actionElement3.chooser = friendlyCharacterChooser
@@ -488,6 +489,7 @@ func character65() -> Character {
         }
         gameController!.actionsForNextTurn.append(embeddedActionElement)
         embeddedActionElement.character = originator
+        embeddedActionElement.actionType = .Melee
         
     }, numberOfTargets: .Some(1), start: .ThisTurn)
     var actionElement6 = ActionElement(action: { originator, targets in
@@ -522,6 +524,62 @@ func character65() -> Character {
     
     var character = Character(name: "Fangrune Guardian", life: 200, gender: .Female, classType: .Protective, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1, reaction2, reaction3])
     character.parry = [90, 140, 180]
+    
+    return character
+}
+
+func character62() -> Character {
+    
+    var actionElement1 = ActionElement(action: { originator, targets in
+        gameController!.rollTwo("Frostfang Axe", closure: {
+            if gameController!.die1.toRaw() % 2 == 1 {
+                damageCharacter(targets[0], originator, 30)
+            }
+            if gameController!.die2.toRaw() % 2 == 1 {
+                damageCharacter(targets[0], originator, 30)
+            }
+        })
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action1 = Action(name: "Frostfang Axe", type: .Melee, elements: [actionElement1])
+
+    var actionElement2 = ActionElement(action: { originator, targets in
+        damageCharacter(targets[0], originator, 20)
+        applyFear(targets[0])
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var actionElement3 = ActionElement(action: { originator, targets in
+        assert(targets[0] === originator, "Originator should be the target.")
+        targets[0].avoidsActionTypes |= .Melee | .Ranged
+    }, numberOfTargets: .Some(1), start: .NextTurn)
+    actionElement3.resolution = { targets in
+        targets[0].avoidsActionTypes ^= .Melee | .Ranged
+    }
+    actionElement3.chooser = { originator, allCharacters in
+        return [originator]
+    }
+    var action2 = Action(name: "Shadow Steel", type: .Status, elements: [actionElement2, actionElement3])
+    
+    var actionElement4 = ActionElement(action: { originator, targets in
+        damageCharacter(targets[0], originator, 30)
+        applyPoison(targets[0])
+        applyStun(targets[0])
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action3 = Action(name: "Gallowglass", type: .Melee, elements: [actionElement4])
+
+    var actionElement5 = ActionElement(damage: 30)
+    var action4 = Action(name: "Black Heap", type: .Melee, elements: [actionElement5])
+
+    var actionElement6 = ActionElement(action: { originator, targets in
+        if targets[0].life <= 30 {
+            applyStun(targets[0])
+        } else {
+            damageCharacter(targets[0], originator, 30)
+        }
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action5 = Action(name: "Freeze Dry", type: .Melee, elements: [actionElement6])
+    
+    var character = Character(name: "Ice Gate Mercenary", life: 180, gender: .Male, classType: .Offensive, faction: .Independent, actions: [action1, action2, action3, action4, action5], reactions: [])
+    character.parry = [90]
+    character.evasion = [30, 110, 150]
     
     return character
 }

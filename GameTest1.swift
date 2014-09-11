@@ -25,13 +25,15 @@ class GameTest1: XCTestCase {
 
     func testExample() {
         
-        var player1 = Player(name: "Bobert")
-        var player2 = Player(name: "Don")
+        var player1 = iconica.Player(name: "Bobert")
+        var player2 = iconica.Player(name: "Don")
         
-        var character1 = character61()
-        var character2 = character45()
+        var character1 = iconica.character61()
+        var character2 = iconica.character45()
         
-        var rolls = Array<TestRoll>()
+        typealias TestRoll = iconica.TestRoll
+        
+        var rolls = Array<iconica.TestRoll>()
         // character 1
         rolls.append(TestRoll(msg:"Action", die1Value: 2))
         rolls.append(TestRoll(msg:"Stun", die1Value: 5))
@@ -69,7 +71,7 @@ class GameTest1: XCTestCase {
         rolls.append(TestRoll(msg:"Action", die1Value: 4))
         rolls.append(TestRoll(msg:"Fear", die1Value: 4))
         
-        var targets = Array<Targets>()
+        var targets = Array<Array<iconica.Character>>()
         // character 1
         targets.append([character2])
         // character 1
@@ -99,7 +101,7 @@ class GameTest1: XCTestCase {
         targets.append([character1]) // Evasive Manuevers
         targets.append([character1])
         
-        var gameController = GameController(players: [player1, player2], testRolls:rolls, testTargets:targets)
+        var gameController = iconica.GameController(players: [player1, player2], testRolls:rolls, testTargets:targets)
         
         character1.player = player1
         character2.player = player2
