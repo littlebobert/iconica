@@ -155,7 +155,7 @@ public func character45() -> Character {
     var reaction2 = Reaction(healthTrigger: 100, damage: 20)
     var reaction3 = Reaction(healthTrigger: 10, damage: 20)
     
-    var character = Character(name: "Wandering Siryn", life: 190, gender: .Female, classType: .Adaptive, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction2, reaction3])
+    var character = Character(name: "Wandering Siryn", life: 190, race:.Sarion, gender: .Female, classType: .Adaptive, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction2, reaction3])
     character.courage = [40, 50, 80, 90]
     character.focus = [170, 180]
     
@@ -259,7 +259,7 @@ public func character61() -> Character {
     
     var reaction1 = Reaction(healthTrigger: 160, damage: 20)
     
-    var character = Character(name: "Grynevian Navigator", life: 220, gender:.Male, classType: .Defensive, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1])
+    var character = Character(name: "Grynevian Navigator", life: 220, race:.Sidrani, gender:.Male, classType: .Defensive, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1])
     character.courage = [80, 90, 100, 120, 180, 190, 200, 210]
     character.parry = [40, 110, 170]
     
@@ -393,7 +393,7 @@ public func character59() -> Character {
     var reaction2 = Reaction(healthTrigger: 120, damage: 10)
     var reaction3 = Reaction(healthTrigger: 110, damage: 10)
     
-    var character = Character(name: "Lylean Sentinel", life: 190, gender: .Male, classType: .Defensive, faction: .Protectorate, actions: [action1, action2, action3, action4], reactions: [reaction1, reaction2, reaction3])
+    var character = Character(name: "Lylean Sentinel", life: 190, race:.Sidrani, gender: .Male, classType: .Defensive, faction: .Protectorate, actions: [action1, action2, action3, action4], reactions: [reaction1, reaction2, reaction3])
     character.courage = [20, 30, 60, 90, 100, 130, 140]
     character.parry = [10, 40, 150, 170]
     
@@ -522,7 +522,7 @@ func character65() -> Character {
     var reaction2 = Reaction(healthTrigger: 130, damage: 10)
     var reaction3 = Reaction(healthTrigger: 80, damage: 10)
     
-    var character = Character(name: "Fangrune Guardian", life: 200, gender: .Female, classType: .Protective, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1, reaction2, reaction3])
+    var character = Character(name: "Fangrune Guardian", life: 200, race:.SarajaSarion, gender: .Female, classType: .Protective, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1, reaction2, reaction3])
     character.parry = [90, 140, 180]
     
     return character
@@ -577,9 +577,85 @@ func character62() -> Character {
     }, numberOfTargets: .Some(1), start: .ThisTurn)
     var action5 = Action(name: "Freeze Dry", type: .Melee, elements: [actionElement6])
     
-    var character = Character(name: "Ice Gate Mercenary", life: 180, gender: .Male, classType: .Offensive, faction: .Independent, actions: [action1, action2, action3, action4, action5], reactions: [])
+    // fixme: the opponent should choose whether to have one of their Characters take damage or the other player’s healed
+    var actionElement7 = ActionElement(damage: 40)
+    var actionElement8 = ActionElement(healing: 40)
+    var action6 = Action(name: "Blade or Bribe", type: .Melee, elements: [actionElement6, actionElement7], actionChoice:.Or)
+    
+    var character = Character(name: "Ice Gate Mercenary", life: 180, race:.Sidrani, gender: .Male, classType: .Offensive, faction: .Independent, actions: [action1, action2, action3, action4, action5], reactions: [])
     character.parry = [90]
     character.evasion = [30, 110, 150]
+    
+    return character
+}
+
+func character30() -> Character {
+    
+    var actionElement1 = ActionElement(action: { originator, targets in
+        if targets.count != 1 {
+            assert(false, "Action should have exactly one target")
+            return
+        }
+        targets[0].sleep = true
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action1 = Action(name: "Sleeping Gas", type: .Status, elements: [actionElement1])
+    
+    var actionElement2 = ActionElement(damage: 30)
+    var actionElement3 = ActionElement(damage: 10)
+    var actionElement4 = ActionElement(damage: 10)
+    var action2 = Action(name: "Fire Trap", type: .Melee, elements: [actionElement2, actionElement3, actionElement4])
+    
+    // fixme: display a picker that lets the attacker distribute this damage
+    var actionElement5 = ActionElement(action: { originator, targets in
+        gameController!.roll("Tricks of the Trade", closure: {
+            let damage = gameController!.die1.toRaw() * 10
+            damageCharacter(targets[0], originator, damage)
+        })
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action3 = Action(name: "Tricks of the Trade", type: .Stance, elements: [actionElement5])
+    
+    var actionElement6 = ActionElement(action: { originator, targets in
+        if targets.count != 1 {
+            assert(false, "Action should target exactly 1 target.")
+            return
+        }
+        applyBlind(targets[0])
+        damageCharacter(targets[0], originator, 10)
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action4 = Action(name: "Signal Lamp", type: .Status, elements: [actionElement6])
+    
+    var actionElement7 = ActionElement(action: { originator, targets in
+        if targets.count > 3 {
+            assert(false, "Action should target at most 3 targets.")
+            return
+        }
+        for target in targets {
+            applyConfusion(target)
+            damageCharacter(target, originator, 10)
+        }
+    }, numberOfTargets: .Some(3), start: .ThisTurn)
+    var action5 = Action(name: "Noxious Cloud", type: .Status, elements: [actionElement7])
+    
+    var actionElement8 = ActionElement(action: { originator, targets in
+        if targets.count != 1 {
+            assert(false, "Action should target exactly 1 target.")
+            return
+        }
+        applyFear(targets[0])
+        gameController!.rollTwo("Ferylide Dagger", closure: {
+            if gameController!.die1.toRaw() == gameController!.die2.toRaw() {
+                targets[0].life = 0
+                targets[0].skulled = true
+            }
+        })
+    }, numberOfTargets: .Some(1), start: .ThisTurn)
+    var action6 = Action(name: "Ferylide Dagger", type: .Status, elements: [actionElement8])
+    
+    var reaction1 = Reaction(healthTrigger: 140, damage: 10)
+    var reaction2 = Reaction(healthTrigger: 120, damage: 10)
+    
+    var character = Character(name: "Pykonian Dark Trader", life: 170, race:.Sarion, gender: .Male, classType: .Disruptive, faction: .Independent, actions: [action1, action2, action3, action4, action5, action6], reactions: [reaction1, reaction2])
+    character.focus = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     
     return character
 }

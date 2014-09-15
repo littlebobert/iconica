@@ -279,7 +279,8 @@ public class GameController : NSObject {
             self.actionsForTurnAfterNext.removeAll(keepCapacity: false)
         }
         
-        // fixme: display Character picker to choose which character acts
+        // fixme: display Character picker to choose which character acts, don't display ones that are asleep
+        // if no Characters are eligable, display a confirmation
         // fixme: display action trigger, fear, stun icon over Characters that have them
         // fixme: display actionTrigger.description confirmation if the use chooses a character with one
         
@@ -424,6 +425,8 @@ public func damageCharacter(character:Character, attacker:Character, var damage:
             }
         }
     }
+    
+    character.sleep = false
 }
 
 public func damageCharacter(character:Character, attacker:Character, var damage:Int) {
@@ -470,6 +473,7 @@ public func applyHealing(character:Character, healing:Int) {
     if character.life > character.maxLife {
         character.life = character.maxLife
     }
+    character.sleep = false
 }
 
 public enum NumberOfTargets {
@@ -537,10 +541,6 @@ public class ActionElement {
     }
 }
 
-public enum Ability {
-    case Evasion(Array<Int>), Courage(Array<Int>), Antidote(Array<Int>), Parry(Array<Int>)
-}
-
 public struct Reaction {
     var healthTrigger:Int
     var damage:Int
@@ -572,10 +572,15 @@ public enum Class {
     case Offensive, Defensive, Adaptive, Disruptive, Supportive, Protective
 }
 
+public enum Race {
+    case SarajaSarion, Sarion, Kirzan, Vaneen, Sidrani, Vyrga, Karkala, Siryl
+}
+
 public class Character {
     public var name:String
     public var life:Int
     public var maxLife:Int
+    public var skulled:Bool
     var classType:Class
     var faction:Faction
     public var actions:Array<Action>
@@ -589,6 +594,7 @@ public class Character {
     var confusion:Bool
     var blind:Bool
     var restoration:Bool
+    public var sleep:Bool
     public var actionTrigger:ActionTrigger?
     public var player:Player?
     var avoidsNegativeStatusEffects:Bool
@@ -601,11 +607,13 @@ public class Character {
     public var damageApplicator:((Character, Int) -> ())?
     public var allowedActions:ActionTypes
     public var avoidsActionTypes:ActionTypes
+    public var race:Race
     
-    init(name:String, life:Int, gender:Gender, classType:Class, faction:Faction, actions:Array<Action>, reactions:Array<Reaction>) {
+    init(name:String, life:Int, race:Race, gender:Gender, classType:Class, faction:Faction, actions:Array<Action>, reactions:Array<Reaction>) {
         self.name = name
         self.maxLife = life
         self.life = life
+        self.race = race
         self.gender = gender
         self.classType = classType
         self.faction = faction
@@ -618,9 +626,11 @@ public class Character {
         self.confusion = false
         self.blind = false
         self.restoration = false
+        self.sleep = false
         self.avoidsNegativeStatusEffects = false
         self.allowedActions = .Melee | .Ranged | .Status | .Healing | .Support | .Stance
         self.avoidsActionTypes = .None
+        self.skulled = false
         
         for action in self.actions {
             action.character = self
