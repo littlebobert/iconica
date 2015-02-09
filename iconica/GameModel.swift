@@ -31,7 +31,7 @@ public class RollDelegate : NSObject {
     }
     
     func message() -> String {
-        return "You rolled a \(gameController!.die1.toRaw())."
+        return "You rolled a \(gameController!.die1.rawValue)."
     }
 }
 
@@ -41,7 +41,7 @@ public class RollTwoDelegate : RollDelegate {
     }
     
     override func message() -> String {
-        return "You rolled a \(gameController!.die1.toRaw()) and a \(gameController!.die2.toRaw())."
+        return "You rolled a \(gameController!.die1.rawValue) and a \(gameController!.die2.rawValue)."
     }
 }
 
@@ -80,8 +80,8 @@ public class GameController : NSObject {
         self.players = players
         self.currentPlayer = players[0]
         self.turn = 0
-        self.die1 = Die()
-        self.die2 = Die()
+        self.die1 = .One
+        self.die2 = .One
         self.actionsForNextTurn = Array<ActionElement>()
         self.actionsForTurnAfterNext = Array<ActionElement>()
         self.gameLogic = Array<() -> ()>()
@@ -93,8 +93,8 @@ public class GameController : NSObject {
         self.players = players
         self.currentPlayer = players[0]
         self.turn = 0
-        self.die1 = Die()
-        self.die2 = Die()
+        self.die1 = .One
+        self.die2 = .One
         self.actionsForNextTurn = Array<ActionElement>()
         self.actionsForTurnAfterNext = Array<ActionElement>()
         self.gameLogic = Array<() -> ()>()
@@ -123,7 +123,7 @@ public class GameController : NSObject {
         if self.testRolls != nil {
             var testRoll = self.testRolls![0]
             assert(testRoll.msg == msg, "The roll message was incorrect")
-            if let die1Value = Die.fromRaw(testRoll.die1Value) {
+            if let die1Value = Die(rawValue:testRoll.die1Value) {
                 self.die1 = die1Value
             } else {
                 assert(false, "The die roll should convert into a Die")
@@ -146,13 +146,13 @@ public class GameController : NSObject {
         if self.testRolls != nil {
             var testRoll = self.testRolls![0]
             assert(testRoll.msg == msg, "The roll message was incorrect")
-            if let die1Value = Die.fromRaw(testRoll.die1Value) {
+            if let die1Value = Die(rawValue: testRoll.die1Value) {
                 self.die1 = die1Value
             } else {
                 assert(false, "The die roll should convert into a Die")
             }
             assert(testRoll.die2Value != nil, "Test roll should have a second die roll")
-            if let die2Value = Die.fromRaw(testRoll.die2Value!) {
+            if let die2Value = Die(rawValue: testRoll.die2Value!) {
                 self.die2 = die2Value
             } else {
                 assert(false, "The die roll should convert into a Die")
@@ -295,7 +295,7 @@ public class GameController : NSObject {
         
         if self.currentPlayer.character!.fear == true {
             self.roll("Remove Fear", closure: {
-                let rollValue = self.die1.toRaw()
+                let rollValue = self.die1.rawValue
                 if rollValue % 2 == 1 {
                     self.currentPlayer.character!.fear = false
                 }
@@ -310,7 +310,7 @@ public class GameController : NSObject {
         }
         
         self.roll("Action", closure: {
-            let rollValue = self.die1.toRaw()
+            let rollValue = self.die1.rawValue
             if (rollValue < 1 && rollValue > 6 && rollValue > self.currentPlayer.character!.actions.count) {
                 return
             }
@@ -339,16 +339,24 @@ public class GameController : NSObject {
 public struct ActionTypes : RawOptionSetType, BooleanType {
     private var value: UInt = 0
     
-    init(_ value: UInt) {
-        self.value = value
+    public init(rawValue: UInt) {
+        self.value = rawValue
     }
     
+    public init(nilLiteral: ()) {
+        self.value = 0b000000
+    }
+    
+    public var rawValue: UInt { get {
+        return self.value
+        } }
+    
     public static func fromMask(raw: UInt) -> ActionTypes {
-        return self(raw)
+        return self(rawValue:raw)
     }
     
     public static func fromRaw(raw: UInt) -> ActionTypes? {
-        return self(raw)
+        return self(rawValue:raw)
     }
     
     public func toRaw() -> UInt {
@@ -360,20 +368,20 @@ public struct ActionTypes : RawOptionSetType, BooleanType {
     }
     
     public static var allZeros: ActionTypes {
-        return self(0)
+        return self(rawValue: 0)
     }
     
     public static func convertFromNilLiteral() -> ActionTypes {
-        return self(0)
+        return self(rawValue: 0)
     }
     
-    static var None: ActionTypes        { return self(0b000000) }
-    static var Melee: ActionTypes       { return self(0b000001) }
-    static var Ranged: ActionTypes      { return self(0b000010) }
-    static var Status: ActionTypes      { return self(0b000100) }
-    static var Support: ActionTypes     { return self(0b001000) }
-    static var Healing: ActionTypes     { return self(0b010000) }
-    static var Stance: ActionTypes      { return self(0b100000) }
+    static var None: ActionTypes        { return self(rawValue: 0b000000) }
+    static var Melee: ActionTypes       { return self(rawValue: 0b000001) }
+    static var Ranged: ActionTypes      { return self(rawValue: 0b000010) }
+    static var Status: ActionTypes      { return self(rawValue: 0b000100) }
+    static var Support: ActionTypes     { return self(rawValue: 0b001000) }
+    static var Healing: ActionTypes     { return self(rawValue: 0b010000) }
+    static var Stance: ActionTypes      { return self(rawValue: 0b100000) }
 }
 
 public enum ActionChoice {
@@ -502,7 +510,7 @@ public class ActionElement {
     
     init(var damage:Int) {
         self.action = {originator, targets -> () in
-            if countElements(targets) != 1 {
+            if count(targets) != 1 {
                 return
             }
             
@@ -514,7 +522,7 @@ public class ActionElement {
     
     init(healing:Int) {
         self.action = { originator, targets -> () in
-            if countElements(targets) != 1 {
+            if count(targets) != 1 {
                 return
             }
             applyHealing(targets[0], healing)
@@ -524,7 +532,7 @@ public class ActionElement {
     }
     init(damageWithPoison:Int) {
         self.action = { originator, targets -> () in
-            if countElements(targets) != 1 {
+            if count(targets) != 1 {
                 return
             }
             damageCharacter(targets[0], originator, damageWithPoison)

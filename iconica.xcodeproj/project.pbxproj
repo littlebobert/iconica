@@ -15,6 +15,7 @@
 		D01283B719AE7F850080F88A /* GameTest1.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B619AE7F850080F88A /* GameTest1.swift */; };
 		D01283B919AE80B30080F88A /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B819AE80B30080F88A /* GameModel.swift */; };
 		D01283BB19AE81330080F88A /* Characters.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283BA19AE81330080F88A /* Characters.swift */; };
+		D01B5DBB19EDF37100288A1D /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D01B5DBA19EDF37100288A1D /* GameKit.framework */; };
 		D02435A919C0FDF400C27905 /* Characters.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283BA19AE81330080F88A /* Characters.swift */; };
 		D02435AA19C0FE2300C27905 /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01283B819AE80B30080F88A /* GameModel.swift */; };
 		D0CEC38519C0EDA000038F6C /* GCTurnBasedMatchHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0CEC38419C0EDA000038F6C /* GCTurnBasedMatchHelper.swift */; };
@@ -43,6 +44,7 @@
 		D01283B619AE7F850080F88A /* GameTest1.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = GameTest1.swift; path = ../GameTest1.swift; sourceTree = "<group>"; };
 		D01283B819AE80B30080F88A /* GameModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
 		D01283BA19AE81330080F88A /* Characters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Characters.swift; sourceTree = "<group>"; };
+		D01B5DBA19EDF37100288A1D /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
 		D0CEC38419C0EDA000038F6C /* GCTurnBasedMatchHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GCTurnBasedMatchHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -51,6 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D01B5DBB19EDF37100288A1D /* GameKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +70,7 @@
 		D00DB32419A53D7200CFEDB6 = {
 			isa = PBXGroup;
 			children = (
+				D01B5DBA19EDF37100288A1D /* GameKit.framework */,
 				D00DB32F19A53D7200CFEDB6 /* iconica */,
 				D00DB34219A53D7200CFEDB6 /* iconicaTests */,
 				D00DB32E19A53D7200CFEDB6 /* Products */,
@@ -172,6 +176,12 @@
 				TargetAttributes = {
 					D00DB32C19A53D7200CFEDB6 = {
 						CreatedOnToolsVersion = 6.0;
+						DevelopmentTeam = 4MW47QVG74;
+						SystemCapabilities = {
+							com.apple.GameCenter = {
+								enabled = 1;
+							};
+						};
 					};
 					D00DB33E19A53D7200CFEDB6 = {
 						CreatedOnToolsVersion = 6.0;
@@ -347,9 +357,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = iconica/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -358,9 +371,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = iconica/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};

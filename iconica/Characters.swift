@@ -49,7 +49,7 @@ public func character45() -> Character {
     var action2 = Action(name: "Glaring Beauty", type: .Status, elements: [actionElement3])
     
     var actionElement4 = ActionElement(action: { originator, targets -> () in
-        if countElements(targets) != 1 {
+        if count(targets) != 1 {
             return
         }
         targets[0].targetable = false
@@ -100,12 +100,12 @@ public func character45() -> Character {
     var action3 = Action(name: "Transfix", type:.Stance, elements: [actionElement4, actionElement5])
     
     var actionElement6 = ActionElement(action: { originator, targets -> () in
-        if countElements(targets) != 1 {
+        if count(targets) != 1 {
             return
         }
         damageCharacter(targets[0], originator, 60)
-        gameController!.roll("Fear", {
-            if gameController!.die1.toRaw() >= 5 {
+        gameController!.roll("Fear", closure: {
+            if gameController!.die1.rawValue >= 5 {
                 applyFear(targets[0])
             }
         })
@@ -113,12 +113,12 @@ public func character45() -> Character {
     var action4 = Action(name: "Backstab", type:.Melee, elements: [actionElement6])
     
     var actionElement7 = ActionElement(action: { originator, targets -> () in
-        if countElements(targets) != 1 {
+        if count(targets) != 1 {
             return
         }
-        gameController!.roll("Action", {
+        gameController!.roll("Action", closure: {
             // perform the target's action
-            let roll = gameController!.die1.toRaw()
+            let roll = gameController!.die1.rawValue
             if targets[0].actions.count >= roll {
                 var resolutionTargets = Array<Targets>()
                 var resolutions = Array<Targets -> ()>()
@@ -139,7 +139,7 @@ public func character45() -> Character {
             }
             
             gameController!.roll("Damage Prevention", closure: {
-                let roll = gameController!.die1.toRaw()
+                let roll = gameController!.die1.rawValue
                 if roll % 2 == 0 {
                     damageCharacter(target, originator, 30)
                 }
@@ -189,12 +189,12 @@ public func character61() -> Character {
     var action1 = Action(name: "Spyscope", type:.Ranged, elements: [actionElement1])
     
     var actionElement2 = ActionElement(action: { originator, targets -> () in
-        if countElements(targets) != 1 {
+        if count(targets) != 1 {
             return
         }
         damageCharacter(targets[0], originator, 30)
-        gameController!.roll("Stun", {
-            if gameController!.die1.toRaw() % 2 == 1 {
+        gameController!.roll("Stun", closure: {
+            if gameController!.die1.rawValue % 2 == 1 {
                 applyStun(targets[0])
             }
         })
@@ -362,7 +362,7 @@ public func character59() -> Character {
         
         var closure: (() -> ())!
         closure = {
-            if gameController!.die1.toRaw() >= 3 {
+            if gameController!.die1.rawValue >= 3 {
                 damageCharacter(targets[0], originator, 10)
                 // fixme: pick a new target
                 gameController!.roll("Defender's Fury", closure: closure)
@@ -493,9 +493,9 @@ func character65() -> Character {
         
     }, numberOfTargets: .Some(1), start: .ThisTurn)
     var actionElement6 = ActionElement(action: { originator, targets in
-        gameController!.roll("Charge’s Action", {
+        gameController!.roll("Charge’s Action", closure: {
             // perform the target's action
-            let roll = gameController!.die1.toRaw()
+            let roll = gameController!.die1.rawValue
             if targets[0].actions.count >= roll {
                 var resolutionTargets = Array<Targets>()
                 var resolutions = Array<Targets -> ()>()
@@ -532,10 +532,10 @@ func character62() -> Character {
     
     var actionElement1 = ActionElement(action: { originator, targets in
         gameController!.rollTwo("Frostfang Axe", closure: {
-            if gameController!.die1.toRaw() % 2 == 1 {
+            if gameController!.die1.rawValue % 2 == 1 {
                 damageCharacter(targets[0], originator, 30)
             }
-            if gameController!.die2.toRaw() % 2 == 1 {
+            if gameController!.die2.rawValue % 2 == 1 {
                 damageCharacter(targets[0], originator, 30)
             }
         })
@@ -608,7 +608,7 @@ func character30() -> Character {
     // fixme: display a picker that lets the attacker distribute this damage
     var actionElement5 = ActionElement(action: { originator, targets in
         gameController!.roll("Tricks of the Trade", closure: {
-            let damage = gameController!.die1.toRaw() * 10
+            let damage = gameController!.die1.rawValue * 10
             damageCharacter(targets[0], originator, damage)
         })
     }, numberOfTargets: .Some(1), start: .ThisTurn)
@@ -643,7 +643,7 @@ func character30() -> Character {
         }
         applyFear(targets[0])
         gameController!.rollTwo("Ferylide Dagger", closure: {
-            if gameController!.die1.toRaw() == gameController!.die2.toRaw() {
+            if gameController!.die1.rawValue == gameController!.die2.rawValue {
                 targets[0].life = 0
                 targets[0].skulled = true
             }
